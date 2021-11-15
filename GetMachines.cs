@@ -89,7 +89,8 @@ namespace ZapMobileApi
 
             log.LogError(req.Method.ToString());
             List<MachineModel> machineList = new List<MachineModel>();
-            List<LocationModel> llist = new List<LocationModel>();
+            List<MeasurementsModel> mlist = new List<MeasurementsModel>();
+
             try
             {
                 using (SqlConnection connection = new SqlConnection(Environment.GetEnvironmentVariable("SqlConnectionString")))
@@ -120,14 +121,10 @@ namespace ZapMobileApi
                         MachineModel machines = new MachineModel()
                         {
                             MachineId = (int)reader["machineId"],
-
                             MachineName = (string)reader["machineName"],
                             Status = true,
                             LocationId = (int)reader["locationId"],
-
-
                             Location = locations
-
 
                         };
                         SensorModel sensors = new SensorModel()
@@ -150,7 +147,7 @@ namespace ZapMobileApi
 
 
                         machineList.Add(machines);
-
+                        mlist.Add(measurements);
 
 
 
@@ -168,6 +165,93 @@ namespace ZapMobileApi
             if (machineList.Count > 0)
             {
                 log.LogError($"{machineList.Count} results found");
+                return new OkObjectResult(mlist);
+
+            }
+            else
+            {
+                log.LogError("No results found!");
+                return new OkObjectResult(mlist);
+            }
+        }
+        /*****************************/
+
+        [FunctionName("GetMachinesById")]
+        public static async Task<IActionResult> GetMachinesById([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "machine/id")] HttpRequest req, ILogger log)
+        {
+
+            log.LogError(req.Method.ToString());
+            List<MachineInfo> machineList = new List<MachineInfo>();
+            List<Sensor> sl = new List<Sensor>();
+            MachineInfo details = new MachineInfo();
+
+            try
+            {
+                
+                using (SqlConnection connection = new SqlConnection(Environment.GetEnvironmentVariable("SqlConnectionString")))
+                {
+                    connection.Open();
+                    string id = req.Query["id"];
+
+                    var query = @"select top (3) MachineTable.machineName,Location.locationName, Sensor.sensorName
+                                    ,Measurement.value, Measurement.timestamp,Location.locationId, MachineTable.machineId,Sensor.sensorId, Measurement.measurementId, Sensor.unit, MachineTable.status
+                                    from Location inner join MachineTable on Location.locationId = MachineTable.locationId inner join
+                                    Sensor on MachineTable.machineId = Sensor.machineId 
+                                    join Measurement on Sensor.sensorId= Measurement.sensorId where MachineTable.machineId =" + id + " order by Measurement.timestamp desc ";
+                   
+                    System.DateTime dbDateTime = new DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+
+             
+                    SqlCommand command = new SqlCommand(query, connection);
+                    var reader = await command.ExecuteReaderAsync();
+
+                    while (reader.Read())
+                    {
+
+                        Sensor sensors = new Sensor()
+                        {
+                            type = (string)reader["sensorName"],
+                            value = (long)reader["value"],
+                            unit = (string)reader["unit"]
+                        };
+                        sl.Add(sensors);
+
+                        details = new MachineInfo() 
+                        { 
+                           machineId= (int)reader["machineId"],
+                           machineName=(string)reader["machineName"],
+                           status=true,
+                           locationId=(int)reader["locationId"],
+                           location= new Location()
+                           {
+                               locationId = (int)reader["locationId"],
+                               locationName = (string)reader["locationName"]
+                           },
+                           measure = new Measure()
+                           {
+                               timestamp = dbDateTime.AddMilliseconds((long)reader["timestamp"]).ToLocalTime(),
+                               sensorList = sl
+                           }
+
+                        };
+                        
+
+                    }
+
+                    machineList.Add(details);
+
+                }
+                
+            }
+            catch (Exception e)
+            {
+                log.LogError(e.ToString());
+            }
+
+
+            if (machineList.Count > 0)
+            {
+                log.LogError($"{machineList.Count} results found");
                 return new OkObjectResult(machineList);
 
             }
@@ -175,8 +259,10 @@ namespace ZapMobileApi
             {
                 log.LogError("No results found!");
                 return new OkObjectResult(machineList);
-            }
-        }
+    }
+}
+/*******************************************************************************/
+
 
         [FunctionName("Test")]
         public static async Task<IActionResult> GetName(
