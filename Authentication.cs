@@ -85,9 +85,10 @@ namespace ZapMobileApi
                         {
                             var userObj = new UserModel
                             {
-                                UserId = Convert.ToInt32(reader["UserId"]),
-                                Email = reader["Email"].ToString(),
-                                Location = reader["Location"].ToString()
+                                UserId = Convert.ToInt32(reader["userId"]),
+                                Email = reader["email"].ToString(),
+                                Location = reader["location"].ToString(),
+                               // LocationId =(int)reader["locationId"]
                             };
                             conn.Close();
                             return new OkObjectResult(userObj);
