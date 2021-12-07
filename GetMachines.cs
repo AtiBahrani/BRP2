@@ -21,7 +21,7 @@ namespace ZapMobileApi
         {
             log.LogError(req.Method.ToString());
             List<MachineModel> machineList = new List<MachineModel>();
-            List<LocationModel> llist = new List<LocationModel>();
+          //  List<LocationModel> llist = new List<LocationModel>();
             try
             {
                 using (SqlConnection connection = new SqlConnection(Environment.GetEnvironmentVariable("SqlConnectionString")))
@@ -30,7 +30,7 @@ namespace ZapMobileApi
                     var query = @"Select Location.locationName, Location.locationId, MachineTable.machineName, MachineTable.machineId , MachineTable.locationId from Location inner join MachineTable on Location.locationId = MachineTable.locationId ";
                     SqlCommand command = new SqlCommand(query, connection);
                     var reader = await command.ExecuteReaderAsync();
-                    System.DateTime dbDateTime = new DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+                 //   System.DateTime dbDateTime = new DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
 
                     while (reader.Read())
                     {
